@@ -1,0 +1,15 @@
+@*
+    FILE        : Home/Error.cshtml
+    DESCRIPTION : Generic error page that hides internal details (OWASP A05).
+                  Never exposes stack traces, SQL errors, or file paths.
+*@
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="text-center mt-5">
+    <h1 class="display-4 text-danger">Something went wrong</h1>
+    <p class="lead">An unexpected error occurred. Please try again later.</p>
+    <p class="text-muted">If the problem persists, contact an administrator.</p>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-primary mt-3">Return to Home</a>
+</div>
