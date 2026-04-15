@@ -88,6 +88,59 @@ namespace StudentHubForum.Models.ViewModels
     }
 
     /// <summary>
+    /// ViewModel for the user profile page.
+    /// </summary>
+    public class ProfileViewModel
+    {
+        public string Email { get; set; } = string.Empty;
+        public string? ProfilePicturePath { get; set; }
+        public DateTime CreatedAt { get; set; }
+
+        // Optional new avatar to upload
+        [Display(Name = "Profile Picture")]
+        public IFormFile? AvatarUpload { get; set; }
+
+        // All posts created by this user (any status)
+        public IEnumerable<Post> MyPosts { get; set; } = new List<Post>();
+    }
+
+    /// <summary>
+    /// ViewModel for the change-password form on the profile page.
+    /// </summary>
+    public class ChangePasswordViewModel
+    {
+        [Required]
+        [DataType(DataType.Password)]
+        [Display(Name = "Current Password")]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100, MinimumLength = 10, ErrorMessage = "Password must be at least 10 characters.")]
+        [DataType(DataType.Password)]
+        [Display(Name = "New Password")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm New Password")]
+        [Compare("NewPassword", ErrorMessage = "Passwords do not match.")]
+        public string ConfirmNewPassword { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// ViewModel for the home page — recent posts plus the logged-in user's post statuses.
+    /// </summary>
+    public class HomeViewModel
+    {
+        public IEnumerable<Post> RecentPosts { get; set; } = new List<Post>();
+
+        // Posts by the current user that are still awaiting admin approval
+        public IEnumerable<Post> MyPendingPosts { get; set; } = new List<Post>();
+
+        // Most recent post by the current user that was approved
+        public Post? MyLastApprovedPost { get; set; }
+    }
+
+    /// <summary>
     /// ViewModel for search results page with pagination support.
     /// </summary>
     public class SearchResultsViewModel
