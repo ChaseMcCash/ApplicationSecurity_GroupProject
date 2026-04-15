@@ -30,18 +30,32 @@ namespace StudentHubForum.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IAuditService _auditService;
+        private readonly IWebHostEnvironment _environment;
+
+        // Attachment security constants — mirrors UploadController whitelist
+        private static readonly HashSet<string> AllowedContentTypes = new()
+        {
+            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "application/pdf", "text/plain"
+        };
+        private static readonly string[] AllowedExtensions =
+            { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf", ".txt" };
+        private const long MaxAttachmentBytes = 5 * 1024 * 1024; // 5 MB
 
         //
         // FUNCTION    : PostsController (constructor)
-        // DESCRIPTION : Injects the database context and audit service.
-        // PARAMETERS  : ApplicationDbContext context : the EF Core database context
-        //               IAuditService auditService    : logs security events
+        // DESCRIPTION : Injects the database context, audit service, and hosting environment.
+        // PARAMETERS  : ApplicationDbContext context       : the EF Core database context
+        //               IAuditService auditService          : logs security events
+        //               IWebHostEnvironment environment     : provides web root path for uploads
         // RETURNS     : N/A (constructor)
         //
-        public PostsController(ApplicationDbContext context, IAuditService auditService)
+        public PostsController(ApplicationDbContext context, IAuditService auditService,
+            IWebHostEnvironment environment)
         {
             _context = context;
             _auditService = auditService;
+            _environment = environment;
         }
 
         //
@@ -124,6 +138,32 @@ namespace StudentHubForum.Controllers
                 return View(model);
             }
 
+            // Validate attachment before saving the post so we can reject early
+            if (model.Attachment != null && model.Attachment.Length > 0)
+            {
+                if (model.Attachment.Length > MaxAttachmentBytes)
+                {
+                    ModelState.AddModelError("Attachment", "File must be under 5 MB.");
+                    model.Categories = await _context.Categories.ToListAsync();
+                    return View(model);
+                }
+
+                if (!AllowedContentTypes.Contains(model.Attachment.ContentType.ToLower()))
+                {
+                    ModelState.AddModelError("Attachment", "Only JPEG, PNG, GIF, WEBP, PDF, and TXT files are allowed.");
+                    model.Categories = await _context.Categories.ToListAsync();
+                    return View(model);
+                }
+
+                var ext = Path.GetExtension(model.Attachment.FileName).ToLower();
+                if (!AllowedExtensions.Contains(ext))
+                {
+                    ModelState.AddModelError("Attachment", "Invalid file extension.");
+                    model.Categories = await _context.Categories.ToListAsync();
+                    return View(model);
+                }
+            }
+
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
             var post = new Post
@@ -137,6 +177,36 @@ namespace StudentHubForum.Controllers
 
             _context.Posts.Add(post);
             await _context.SaveChangesAsync();
+
+            // Save attachment if one was provided and passed validation
+            if (model.Attachment != null && model.Attachment.Length > 0)
+            {
+                var ext = Path.GetExtension(model.Attachment.FileName).ToLower();
+                var storedFileName = $"post_{Guid.NewGuid()}{ext}";
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
+                Directory.CreateDirectory(uploadsFolder);
+
+                using (var stream = new FileStream(Path.Combine(uploadsFolder, storedFileName), FileMode.Create))
+                {
+                    await model.Attachment.CopyToAsync(stream);
+                }
+
+                var fileUpload = new FileUpload
+                {
+                    PostId = post.Id,
+                    UploadedByUserId = userId,
+                    OriginalFileName = Path.GetFileName(model.Attachment.FileName),
+                    StoredFileName = storedFileName,
+                    ContentType = model.Attachment.ContentType.ToLower(),
+                    FileSizeBytes = model.Attachment.Length
+                };
+
+                _context.FileUploads.Add(fileUpload);
+                await _context.SaveChangesAsync();
+
+                await _auditService.LogAsync("FILE_UPLOADED", "FileUpload", fileUpload.Id.ToString(),
+                    $"Attachment '{fileUpload.OriginalFileName}' uploaded with post {post.Id}");
+            }
 
             // Log the post creation event
             await _auditService.LogAsync("POST_CREATED", "Post", post.Id.ToString(),

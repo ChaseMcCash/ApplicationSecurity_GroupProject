@@ -153,3 +153,47 @@
     </div>
 
 </div>
+
+@section Scripts {
+    <script>
+        // ── 1. LOGOUT INTERCEPTION ──────────────────────────────────────────
+        // Before the logout form submits, replace the Profile entry in the
+        // browser history with the home page URL.  This means the Back button
+        // after logout will go to whatever the user visited *before* Profile,
+        // never back to Profile itself.
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('form[action*="Logout"]').forEach(function (form) {
+                form.addEventListener('submit', function () {
+                    history.replaceState(null, '', '/');
+                });
+            });
+        });
+
+        // ── 2. BACK / FORWARD CACHE GUARD ──────────────────────────────────
+        // If the Profile page somehow appears on a back/forward navigation
+        // (bfcache restore OR disk-cache hit), verify the session is still
+        // valid with a lightweight HEAD request.  redirect:'manual' means a
+        // redirect to /Account/Login surfaces as an opaque response (status 0)
+        // rather than silently following through — we use that to detect
+        // a logged-out state and send the user to the home page instead.
+        window.addEventListener('pageshow', function (e) {
+            var navType = (performance.getEntriesByType('navigation')[0] || {}).type;
+            if (e.persisted || navType === 'back_forward') {
+                fetch(window.location.href, {
+                    method: 'HEAD',
+                    credentials: 'same-origin',
+                    redirect: 'manual'
+                }).then(function (r) {
+                    // opaqueredirect (type) or status 0 means the server
+                    // redirected us away — i.e. the user is no longer authenticated
+                    if (r.type === 'opaqueredirect' || r.status === 0) {
+                        window.location.replace('/');
+                    }
+                }).catch(function () {
+                    window.location.replace('/');
+                });
+            }
+        });
+    </script>
+}
+

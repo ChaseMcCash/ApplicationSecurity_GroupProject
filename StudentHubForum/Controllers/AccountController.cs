@@ -210,8 +210,14 @@ namespace StudentHubForum.Controllers
                 await _auditService.LogAsync("LOGIN_SUCCESS", "User", user?.Id,
                     $"User logged in: {model.Email}");
 
-                // Redirect to the return URL if valid, otherwise go to Home
-                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                // Only redirect to returnUrl if it is local AND not a POST-only endpoint.
+                // POST-only endpoints (ChangePassword, UploadAvatar, Logout) return 405
+                // when reached via a browser GET after a login redirect.
+                string[] postOnlyPaths = { "/Account/ChangePassword", "/Account/UploadAvatar", "/Account/Logout" };
+                bool returnUrlIsPostOnly = !string.IsNullOrEmpty(returnUrl) &&
+                    postOnlyPaths.Any(p => returnUrl.StartsWith(p, StringComparison.OrdinalIgnoreCase));
+
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrlIsPostOnly)
                 {
                     return Redirect(returnUrl);
                 }
@@ -270,6 +276,7 @@ namespace StudentHubForum.Controllers
         //
         [HttpGet]
         [Authorize]
+        [ResponseCache(NoStore = true, Duration = 0, Location = ResponseCacheLocation.None)]
         public async Task<IActionResult> Profile()
         {
             var user = await _userManager.GetUserAsync(User);
