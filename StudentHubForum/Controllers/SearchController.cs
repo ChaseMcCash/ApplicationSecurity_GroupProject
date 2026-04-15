@@ -50,18 +50,34 @@ namespace StudentHubForum.Controllers
         {
             var viewModel = new SearchResultsViewModel { Query = query ?? string.Empty };
 
-            // Only execute search if a query was provided
+            // this is the vulnerable version of search (for demo purposes)
+            // instead of using safe EF queries, we directly inject the user input into SQL
+            // this is BAD practice and allows SQL Injection attacks
+
             if (!string.IsNullOrWhiteSpace(query))
             {
-                // EF Core translates this to parameterized SQL:
-                //   SELECT ... FROM Posts WHERE Title LIKE @p0 AND IsDeleted = 0 AND IsApproved = 1
-                // The user's input is NEVER concatenated into the SQL string.
+                // this is the vulnerable version of the search feature for demo purposes
+                // instead of using safe queries, we are directly inserting user input into SQL
+                // this is bad practice because it allows SQL Injection attacks
+
                 viewModel.Results = await _context.Posts
-                    .Where(p => p.Title.Contains(query) && !p.IsDeleted && p.IsApproved)
+
+                    // here we are building a raw SQL query using string interpolation
+                    // whatever the user types in the search bar gets placed directly into the SQL
+                    // this is what makes it vulnerable to things like: ' OR 1=1 --
+                    .FromSqlRaw($"SELECT * FROM Posts WHERE Title LIKE '%{query}%'")
+
+                    // we removed the IsApproved filter so we can clearly see the injected results
+                    // otherwise it was hiding posts and making testing confusing
                     .OrderByDescending(p => p.CreatedAt)
-                    .Take(50) // Limit results to prevent data dumping
+
+                    // include related data so posts display properly (author + category)
                     .Include(p => p.Author)
                     .Include(p => p.Category)
+
+                    // limit results so it doesn't return too much data
+                    .Take(50)
+
                     .ToListAsync();
             }
 
