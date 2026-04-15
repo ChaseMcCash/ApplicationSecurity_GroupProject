@@ -23,7 +23,7 @@ namespace StudentHubForum.Controllers
     /// <summary>
     /// Admin dashboard — restricted to users with the "Admin" role (OWASP A01 mitigation).
     /// </summary>
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin")]//commenting it out to make the admin panel accessible without the admin role which would be a broken access control vulnerability
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;
