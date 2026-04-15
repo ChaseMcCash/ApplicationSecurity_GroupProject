@@ -25,3 +25,17 @@ using StudentHubForum.Services;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ---------------------------------------------------------------
+//  DATABASE — EF Core with SQL Server
+// ---------------------------------------------------------------
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
+
+
+
+
+
+
+app.Run();
