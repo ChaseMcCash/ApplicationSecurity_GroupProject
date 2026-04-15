@@ -46,24 +46,51 @@ namespace StudentHubForum.Controllers
         // PARAMETERS  : string query : the user's search text
         // RETURNS     : Task<IActionResult> : the search results view
         //
-        public async Task<IActionResult> Index(string query)
-        {
-            var viewModel = new SearchResultsViewModel { Query = query ?? string.Empty };
+        private const int PageSize = 5;
 
-            // Only execute search if a query was provided
+        //
+        // FUNCTION    : Index
+        // DESCRIPTION : Searches for posts matching the query string. Uses EF Core's
+        //               LINQ provider which translates to parameterized SQL (safe from injection).
+        //               When no query is provided, all approved posts are shown.
+        //               Results are paginated at 5 posts per page.
+        // PARAMETERS  : string query : the user's search text (optional)
+        //               int page     : the current page number (1-based)
+        // RETURNS     : Task<IActionResult> : the search results view
+        //
+        public async Task<IActionResult> Index(string query, int page = 1)
+        {
+            if (page < 1) page = 1;
+
+            var baseQuery = _context.Posts
+                .Where(p => !p.IsDeleted && p.IsApproved);
+
+            // Filter by title when a query is provided; otherwise show all posts
             if (!string.IsNullOrWhiteSpace(query))
             {
-                // EF Core translates this to parameterized SQL:
-                //   SELECT ... FROM Posts WHERE Title LIKE @p0 AND IsDeleted = 0 AND IsApproved = 1
-                // The user's input is NEVER concatenated into the SQL string.
-                viewModel.Results = await _context.Posts
-                    .Where(p => p.Title.Contains(query) && !p.IsDeleted && p.IsApproved)
-                    .OrderByDescending(p => p.CreatedAt)
-                    .Take(50) // Limit results to prevent data dumping
-                    .Include(p => p.Author)
-                    .Include(p => p.Category)
-                    .ToListAsync();
+                baseQuery = baseQuery.Where(p => p.Title.Contains(query));
             }
+
+            var totalCount = await baseQuery.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)PageSize);
+            if (totalPages < 1) totalPages = 1;
+            if (page > totalPages) page = totalPages;
+
+            var results = await baseQuery
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip((page - 1) * PageSize)
+                .Take(PageSize)
+                .Include(p => p.Author)
+                .Include(p => p.Category)
+                .ToListAsync();
+
+            var viewModel = new SearchResultsViewModel
+            {
+                Query = query ?? string.Empty,
+                Results = results,
+                Page = page,
+                TotalPages = totalPages
+            };
 
             return View(viewModel);
         }

@@ -69,6 +69,10 @@ namespace StudentHubForum.Models.ViewModels
         [Display(Name = "Category")]
         public int CategoryId { get; set; }
 
+        // Optional file attachment (JPEG, PNG, GIF, WEBP, PDF, TXT — max 5 MB)
+        [Display(Name = "Attachment (optional)")]
+        public IFormFile? Attachment { get; set; }
+
         // Available categories for the dropdown
         public IEnumerable<Category>? Categories { get; set; }
     }
@@ -84,11 +88,13 @@ namespace StudentHubForum.Models.ViewModels
     }
 
     /// <summary>
-    /// ViewModel for search results page.
+    /// ViewModel for search results page with pagination support.
     /// </summary>
     public class SearchResultsViewModel
     {
         public string Query { get; set; } = string.Empty;
         public IEnumerable<Post> Results { get; set; } = new List<Post>();
+        public int Page { get; set; } = 1;
+        public int TotalPages { get; set; } = 1;
     }
 }
