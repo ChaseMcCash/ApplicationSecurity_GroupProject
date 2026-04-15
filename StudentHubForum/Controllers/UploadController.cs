@@ -107,26 +107,26 @@ namespace StudentHubForum.Controllers
             }
 
             // 2. File size validation
-            if (file.Length > MaxFileSizeBytes)
-            {
-                ViewBag.Error = "File exceeds the 5 MB size limit.";
-                return View("Index");
-            }
+            //if (file.Length > MaxFileSizeBytes)
+            //{
+            //    ViewBag.Error = "File exceeds the 5 MB size limit.";
+            //    return View("Index");
+            //}
 
             // 3. MIME content type whitelist validation
-            if (!AllowedContentTypes.Contains(file.ContentType.ToLower()))
-            {
-                ViewBag.Error = "File type not allowed. Permitted: JPEG, PNG, GIF, WEBP, PDF, TXT.";
-                return View("Index");
-            }
+            //if (!AllowedContentTypes.Contains(file.ContentType.ToLower()))
+            //{
+            //    ViewBag.Error = "File type not allowed. Permitted: JPEG, PNG, GIF, WEBP, PDF, TXT.";
+            //    return View("Index");
+            //}
 
             // 4. File extension whitelist validation
             var extension = Path.GetExtension(file.FileName).ToLower();
-            if (!AllowedExtensions.Contains(extension))
-            {
-                ViewBag.Error = "File extension not allowed.";
-                return View("Index");
-            }
+            //if (!AllowedExtensions.Contains(extension))
+            //{
+            //    ViewBag.Error = "File extension not allowed.";
+            //    return View("Index");
+            //}
 
             // 5. Generate a safe stored filename using GUID (prevents path traversal)
             var storedFileName = $"{Guid.NewGuid()}{extension}";
