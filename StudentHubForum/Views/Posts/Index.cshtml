@@ -1,41 +1,56 @@
 @*
     FILE        : Posts/Index.cshtml
-    DESCRIPTION : Forum listing page showing all approved posts.
+    DESCRIPTION : Forum listing page showing all approved posts with a content preview.
+                  Content longer than 150 characters is truncated with an ellipsis.
 *@
 @model IEnumerable<Post>
 @{
     ViewData["Title"] = "Forum";
+    const int PreviewLength = 150;
 }
 
-<h2>Forum Posts</h2>
-<a asp-action="Create" class="btn btn-success mb-3">Create New Post</a>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Forum Posts</h2>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <a asp-action="Create" class="btn btn-success">Create New Post</a>
+    }
+</div>
 <hr />
 
 @if (Model != null && Model.Any())
 {
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Author</th>
-                <th>Category</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var post in Model)
-            {
-                <tr>
-                    <td>
-                        <a asp-action="Detail" asp-route-id="@post.Id">@post.Title</a>
-                    </td>
-                    <td>@post.Author?.UserName</td>
-                    <td><span class="badge bg-info">@post.Category?.Name</span></td>
-                    <td>@post.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="row row-cols-1 g-3">
+        @foreach (var post in Model)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h5 class="card-title mb-0">
+                                <a asp-action="Detail" asp-route-id="@post.Id" class="text-decoration-none stretched-link">
+                                    @post.Title
+                                </a>
+                            </h5>
+                            <span class="badge bg-info ms-2 flex-shrink-0">@post.Category?.Name</span>
+                        </div>
+                        <p class="card-text text-muted mb-2">
+                            @{
+                                var preview = post.Content.Length > PreviewLength
+                                    ? post.Content.Substring(0, PreviewLength) + "..."
+                                    : post.Content;
+                            }
+                            @preview
+                        </p>
+                    </div>
+                    <div class="card-footer text-muted small d-flex justify-content-between">
+                        <span>@post.Author?.UserName</span>
+                        <span>@post.CreatedAt.ToString("yyyy-MM-dd HH:mm")</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 }
 else
 {

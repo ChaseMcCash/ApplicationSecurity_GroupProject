@@ -14,7 +14,7 @@
 
         <div asp-validation-summary="All" class="text-danger"></div>
 
-        <form asp-action="Create" method="post">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
 
             <div class="mb-3">
@@ -37,6 +37,14 @@
                 <textarea asp-for="Content" class="form-control" rows="8"
                           placeholder="Write your post content..."></textarea>
                 <span asp-validation-for="Content" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Attachment" class="form-label"></label>
+                <input asp-for="Attachment" type="file" class="form-control"
+                       accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain" />
+                <div class="form-text">Optional — JPEG, PNG, GIF, WEBP, PDF or TXT, max 5 MB.</div>
+                <span asp-validation-for="Attachment" class="text-danger"></span>
             </div>
 
             <button type="submit" class="btn btn-success">Submit Post</button>
