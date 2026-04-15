@@ -10,9 +10,13 @@
 //   information disclosure (OWASP A05).
 // 
 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StudentHubForum.Data;
+using StudentHubForum.Models;
+using StudentHubForum.Models.ViewModels;
+using System.Security.Claims;
 
 namespace StudentHubForum.Controllers
 {
@@ -22,23 +26,28 @@ namespace StudentHubForum.Controllers
     public class HomeController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         //
         // FUNCTION    : HomeController (constructor)
-        // DESCRIPTION : Injects the database context.
-        // PARAMETERS  : ApplicationDbContext context : the EF Core database context
+        // DESCRIPTION : Injects the database context and user manager.
+        // PARAMETERS  : ApplicationDbContext context                 : the EF Core database context
+        //               UserManager<ApplicationUser> userManager     : retrieves the current user
         // RETURNS     : N/A (constructor)
         //
-        public HomeController(ApplicationDbContext context)
+        public HomeController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         //
         // FUNCTION    : Index
-        // DESCRIPTION : Displays the home page with the latest approved, non-deleted posts.
+        // DESCRIPTION : Displays the home page with the latest approved posts.
+        //               When the user is logged in, also loads their pending posts
+        //               and most recently approved post for the status widget.
         // PARAMETERS  : none
-        // RETURNS     : Task<IActionResult> : the Index view with recent posts
+        // RETURNS     : Task<IActionResult> : the Index view with HomeViewModel
         //
         public async Task<IActionResult> Index()
         {
@@ -50,7 +59,25 @@ namespace StudentHubForum.Controllers
                 .Include(p => p.Category)
                 .ToListAsync();
 
-            return View(recentPosts);
+            var viewModel = new HomeViewModel { RecentPosts = recentPosts };
+
+            // Load post status data only for authenticated users
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+                viewModel.MyPendingPosts = await _context.Posts
+                    .Where(p => p.AuthorId == userId && !p.IsApproved && !p.IsDeleted)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .ToListAsync();
+
+                viewModel.MyLastApprovedPost = await _context.Posts
+                    .Where(p => p.AuthorId == userId && p.IsApproved && !p.IsDeleted)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .FirstOrDefaultAsync();
+            }
+
+            return View(viewModel);
         }
 
         //
