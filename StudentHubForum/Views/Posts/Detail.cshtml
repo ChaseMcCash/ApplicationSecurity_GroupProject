@@ -22,7 +22,9 @@
 
         @* SECURE: Default Razor encoding prevents XSS — script tags become harmless text *@
         <div class="post-content mb-4">
-            <p>@Model.Content</p>
+            <!-- vulnerable version for XSS demo -->
+            <!-- this bypasses encoding and allows scripts to run -->
+            @Html.Raw(Model.Content)
         </div>
 
         @* Attachments *@

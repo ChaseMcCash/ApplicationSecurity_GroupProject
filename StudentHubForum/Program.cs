@@ -132,8 +132,8 @@ app.Use(async (context, next) =>
 {
     // Content-Security-Policy: only allow resources from same origin
     context.Response.Headers.Append("Content-Security-Policy",
-        "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; " +
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;");
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;");
 
     // Prevent MIME type sniffing
     context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
