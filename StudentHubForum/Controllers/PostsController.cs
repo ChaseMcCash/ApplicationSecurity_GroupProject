@@ -132,7 +132,7 @@ namespace StudentHubForum.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreatePostViewModel model)
         {
-            if (!ModelState.IsValid)
+            if (!ModelState.IsValid) //rejects posts with invalid/missing fields
             {
                 model.Categories = await _context.Categories.ToListAsync();
                 return View(model);
@@ -172,7 +172,7 @@ namespace StudentHubForum.Controllers
                 Content = model.Content,
                 AuthorId = userId,
                 CategoryId = model.CategoryId,
-                IsApproved = false  // Posts require admin approval
+                IsApproved = false  // new posts require admin approval before being visible
             };
 
             _context.Posts.Add(post);
@@ -227,7 +227,7 @@ namespace StudentHubForum.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddComment(int postId, string content)
         {
-            // Validate comment content
+            // Validate comment content, caps comment length, limiting payload size
             if (string.IsNullOrWhiteSpace(content) || content.Length > 1000)
             {
                 return RedirectToAction(nameof(Detail), new { id = postId });

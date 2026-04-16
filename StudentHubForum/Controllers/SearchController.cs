@@ -61,7 +61,8 @@ namespace StudentHubForum.Controllers
         public async Task<IActionResult> Index(string query, int page = 1)
         {
             if (page < 1) page = 1;
-
+            // Searches for posts matching the query string. Uses EF Core's
+           //LINQ provider which translates to parameterized SQL 
             var baseQuery = _context.Posts
                 .Where(p => !p.IsDeleted && p.IsApproved);
 

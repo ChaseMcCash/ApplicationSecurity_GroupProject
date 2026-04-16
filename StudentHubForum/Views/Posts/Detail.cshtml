@@ -22,7 +22,7 @@
 
         @* SECURE: Default Razor encoding prevents XSS — script tags become harmless text *@
         <div class="post-content mb-4">
-            <p>@Model.Content</p>
+            <p>@Model.Content</p> // Razor auto-encodes post content
         </div>
 
         @* Attachments *@
